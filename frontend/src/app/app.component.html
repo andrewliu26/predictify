@@ -1,0 +1,32 @@
+<div class="container">
+  <h1>{{ title }}</h1>
+
+  <!-- Log in button when token is not present -->
+  <div *ngIf="!token">
+    <button (click)="loginWithSpotify()">Log in with Spotify</button>
+  </div>
+
+  <!-- Show Spotify history if token is present -->
+  <div *ngIf="token">
+    <!-- Recently Played Section -->
+    <h2>Your Recently Played Tracks:</h2>
+    <ul *ngIf="history.length > 0">
+      <li *ngFor="let item of history">
+        <strong>{{ item.track.name }}</strong> by {{ getArtistNames(item.track.artists) }}
+      </li>
+    </ul>
+    <p *ngIf="history.length === 0">No recent tracks found.</p>
+
+    <!-- Saved Tracks Section -->
+    <h2>Your Saved Tracks:</h2>
+    <ul *ngIf="saved.length > 0">
+      <li *ngFor="let item of saved">
+        <strong>{{ item.track.name }}</strong> by {{ getArtistNames(item.track.artists) }}
+      </li>
+    </ul>
+    <p *ngIf="saved.length === 0">No saved tracks found.</p>
+
+    <!-- Logout Button -->
+    <button (click)="logoutFromSpotify()">Logout</button>
+  </div>
+</div>
