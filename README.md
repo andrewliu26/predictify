@@ -15,7 +15,8 @@ Predictify is a music recommendation app that analyzes users' Spotify listening 
 
 ## Data Collection
 
-- **Source**: Spotify listening history via Spotify Web API.
+- **Source**: [Kaggle Spotify tracks dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset/data)
+  - (Changed due to [Spotify's developer policy](https://developer.spotify.com/terms#section-iv-restrictions:~:text=Misuse%20of%20the,or%20AI%20model%3B) against using Spotify content for machine learning model training).
 - **Collected Data**: 
   - Song metadata (track title, artist, album, etc.)
   - Audio features (tempo, energy, mood, etc.)

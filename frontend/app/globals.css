@@ -3,19 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
+  --background: #fafafa;
   --foreground: #171717;
+  --card-bg: #ffffff;
+  --card-border: #e5e5e5;
+  --highlight-text: #1f2937; /* Default dark gray for headers */
+  --primary-text: #6b7280; /* Lighter gray for subtext */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --card-bg: #1c1c1c;
+    --card-border: #3f3f3f;
+    --highlight-text: #e5e7eb; /* Lighter gray for headers */
+    --primary-text: #9ca3af; /* Gray for subtext */
   }
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  font-family: var(--font-outfit, Arial, Helvetica), sans-serif;
+}
+
+.loader {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid var(--highlight-text);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }

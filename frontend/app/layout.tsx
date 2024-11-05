@@ -1,36 +1,30 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Outfit } from 'next/font/google';
 import "./globals.css";
 import React from "react";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+const outfit = Outfit({
+    subsets: ['latin'],
+    variable: '--font-outfit',
 });
 
 export const metadata: Metadata = {
-  title: "Predictify",
-  description: "Find your next favorite song",
+    title: "Predictify",
+    description: "Find your next favorite song",
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
+                                       children,
+                                   }: Readonly<{
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    return (
+        <html lang="en">
+        <body
+            className={`${outfit.variable} antialiased`}
+        >
         {children}
-      </body>
-    </html>
-  );
+        </body>
+        </html>
+    );
 }

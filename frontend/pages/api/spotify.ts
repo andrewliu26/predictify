@@ -1,4 +1,3 @@
-// pages/api/spotify.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 
 async function fetchSpotifyData(url: string, token: string) {
@@ -10,15 +9,18 @@ async function fetchSpotifyData(url: string, token: string) {
     });
 
     if (!response.ok) {
-      const errorDetails = await response.text();
+      const errorDetails = await response.json();
       console.error("Spotify API error:", response.status, errorDetails);
-      throw new Error("Failed to fetch data from Spotify");
+      return { error: `Spotify API error: ${response.statusText}` };
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Return either `data.items` if available, or `data` directly if `items` is not present
+    return data.items || data;
   } catch (error) {
     console.error("Error in Spotify API handler:", error);
-    throw error;
+    return { error: "Failed to fetch data from Spotify" };
   }
 }
 
@@ -28,18 +30,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let url = "";
   if (type === "recentlyPlayed") {
     url = "https://api.spotify.com/v1/me/player/recently-played";
-  } else if (type === "savedTracks") {
-    url = "https://api.spotify.com/v1/me/tracks";
+  } else if (type === "topTracks") {
+    url = "https://api.spotify.com/v1/me/top/tracks";
+  } else if (type === "topArtists") {
+    url = "https://api.spotify.com/v1/me/top/artists";
   } else {
     res.status(400).json({ error: "Invalid type" });
     return;
   }
 
-  try {
-    const data = await fetchSpotifyData(url, token);
-    res.status(200).json(data.items);
-  } catch (error) {
-    console.error("Error in Spotify API handler:", error);
-    res.status(500).json({ error: "Failed to fetch data from Spotify" });
+  const data = await fetchSpotifyData(url, token);
+
+  if (data && !data.error) {
+    res.status(200).json(data);
+  } else {
+    res.status(500).json({ error: data.error || "Failed to fetch data from Spotify" });
   }
 }
