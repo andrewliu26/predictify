@@ -2,10 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import TrackSection from "@/app/components/TrackSection";
-import { Line } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface Artist {
   name: string;
@@ -16,10 +12,11 @@ interface Album {
 }
 
 interface TrackItem {
+  id: string;
   name: string;
   artists: Artist[];
   album: Album;
-  id: string;
+  url: string;
 }
 
 interface RecentlyPlayedItem {
@@ -27,24 +24,16 @@ interface RecentlyPlayedItem {
 }
 
 interface TopTrackItem {
+  id: string;
   name: string;
   artists: Artist[];
   album: Album;
-  id: string;
-}
-
-interface AudioFeature {
-  danceability: number;
-  energy: number;
-  tempo: number;
-  valence: number;
-  name: string;
+  url: string;
 }
 
 export default function Dashboard() {
   const [recentTracks, setRecentTracks] = useState<TrackItem[]>([]);
   const [topTracks, setTopTracks] = useState<TrackItem[]>([]);
-  const [audioFeatures, setAudioFeatures] = useState<AudioFeature[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -68,10 +57,11 @@ export default function Dashboard() {
       const normalizedData = data.map((item) => {
         const track = (item as RecentlyPlayedItem).track || (item as TopTrackItem);
         return {
+          id: track.id,
           name: track.name,
           artists: track.artists,
           album: track.album,
-          id: track.id,
+          url: `https://open.spotify.com/track/${track.id}`,
         };
       });
 
@@ -88,82 +78,16 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAudioFeatures = async (trackIds: string[]) => {
-    const token = localStorage.getItem("spotifyToken");
-
-    if (!token) {
-      setError("No Spotify access token found.");
-      return;
-    }
-
-    try {
-      const response = await fetch("https://api.spotify.com/v1/audio-features?ids=" + trackIds.join(","), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      const features: AudioFeature[] = data.audio_features.map((feature: any) => ({
-        danceability: feature.danceability,
-        energy: feature.energy,
-        tempo: feature.tempo,
-        valence: feature.valence,
-        name: feature.name,
-      }));
-
-      setAudioFeatures(features);
-    } catch (error) {
-      console.error("Error fetching audio features:", error);
-      setError("Failed to fetch audio features.");
-    }
-  };
-
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchSpotifyData("recentlyPlayed"), fetchSpotifyData("topTracks")]).then(() => {
-      const trackIds = topTracks.map(track => track.id);
-      if (trackIds.length) {
-        fetchAudioFeatures(trackIds);
-      }
-      setLoading(false);
-    });
+    Promise.all([fetchSpotifyData("recentlyPlayed"), fetchSpotifyData("topTracks")]).then(() =>
+        setLoading(false)
+    );
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("spotifyToken");
     window.location.href = "/";
-  };
-
-  const chartData = {
-    labels: audioFeatures.map((feature) => feature.name),
-    datasets: [
-      {
-        label: "Danceability",
-        data: audioFeatures.map((feature) => feature.danceability),
-        borderColor: "#4bc0c0",
-        fill: false,
-      },
-      {
-        label: "Energy",
-        data: audioFeatures.map((feature) => feature.energy),
-        borderColor: "#36a2eb",
-        fill: false,
-      },
-      {
-        label: "Tempo",
-        data: audioFeatures.map((feature) => feature.tempo),
-        borderColor: "#ffcd56",
-        fill: false,
-      },
-      {
-        label: "Valence",
-        data: audioFeatures.map((feature) => feature.valence),
-        borderColor: "#ff6384",
-        fill: false,
-      },
-    ],
   };
 
   if (error) {
@@ -179,13 +103,13 @@ export default function Dashboard() {
   }
 
   return (
-      <div className="p-8 min-h-screen" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
-        <div className="max-w-5xl mx-auto">
+      <div className="p-8 min-h-screen flex flex-col" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+        <div className="max-w-5xl mx-auto w-full flex-grow">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-3xl font-bold" style={{ color: "var(--highlight-text)" }}>Dashboard</h1>
             <button
                 onClick={handleLogout}
-                className="px-4 py-3 bg-foreground text-background font-semibold rounded-full hover:bg-[#383838] transition-colors flex items-center gap-2"
+                className="px-4 py-3 bg-foreground text-background font-semibold rounded-full hover:bg-[#383838] dark:hover:bg-[#ccc] transition-colors flex items-center gap-2"
             >
               <span className="ml-1">Log Out</span>
               <svg
@@ -203,15 +127,14 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <TrackSection title="Top Tracks" subtitle="past 6 months" tracks={topTracks} />
+            <TrackSection title="Top Tracks" subtitle="in the last 6 months" tracks={topTracks} />
             <TrackSection title="Recently Played Tracks" tracks={recentTracks} />
           </div>
-
-          <div className="mt-12">
-            <h2 className="text-2xl font-semibold mb-6" style={{ color: "var(--highlight-text)" }}>Audio Features</h2>
-            <Line data={chartData} options={{ responsive: true, plugins: { legend: { position: 'top' }, title: { display: true, text: 'Audio Features of Top Tracks' } } }} />
-          </div>
         </div>
+        
+        <footer className="mt-12 mb-4 text-center text-sm opacity-70">
+          All music data and artwork provided by <a href="https://open.spotify.com/" target="_blank" rel="noopener noreferrer" className="underline opacity-100 hover:opacity-70">Spotify</a>. Spotify® is a registered trademark of Spotify AB.
+        </footer>
       </div>
   );
 }
