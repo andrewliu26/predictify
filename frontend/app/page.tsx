@@ -1,16 +1,22 @@
 "use client";
 
 export default function LandingPage() {
-    const clientId = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI;
-    const scopes = 'user-read-recently-played user-top-read';
+    const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID;
+    const REDIRECT_URI = "http://localhost:3000/callback";
+    const SCOPES = [
+        "user-read-recently-played",
+        "user-top-read",
+        "user-read-currently-playing",
+    ].join("%20");
+
+    const loginUrl = `https://accounts.spotify.com/authorize?client_id=${SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=${SCOPES}`;
 
     const handleLogin = () => {
-        if (!clientId) {
+        if (!SPOTIFY_CLIENT_ID) {
             console.error("Spotify Client ID is missing.");
             return;
         }
-        window.location.href = `https://accounts.spotify.com/authorize?response_type=code&client_id=${clientId}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(redirectUri ?? '')}`;
+        window.location.href = loginUrl;
     };
 
     return (

@@ -1,41 +1,77 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics.pairwise import cosine_similarity
 import joblib
-from sklearn.cluster import KMeans
 
 app = Flask(__name__)
+CORS(app)
 
-# Load the trained model
-model = joblib.load("model.pkl")
+# Load the Spotify dataset
+df = pd.read_csv("spotify_data.csv")
+
+# Initialize the scaler
+scaler = StandardScaler()
+
+# Select features for content-based filtering
+FEATURES = ["danceability", "energy", "valence", "tempo", "instrumentalness"]
+
+# Scale the features
+scaled_features = scaler.fit_transform(df[FEATURES])
+feature_matrix = pd.DataFrame(scaled_features, columns=FEATURES)
 
 
 @app.route("/recommend", methods=["POST"])
 def recommend():
     try:
-        # Get audio features from request
-        data = request.json
-        user_features = pd.DataFrame([data])
+        # Get user's track features
+        user_features = request.json
 
-        # Predict cluster for user's features
-        cluster = model.predict(user_features)[0]
+        if not user_features:
+            return jsonify({"error": "No features provided"}), 400
 
-        # Recommend songs from the same cluster (example using sample dataset)
-        # You can load the original dataset here or cache it for recommendations
-        dataset = pd.read_csv("./spotify_data.csv")
-        features = dataset[["danceability", "energy", "tempo", "valence"]]
+        # Create user feature vector
+        user_vector = np.array(
+            [
+                [
+                    user_features.get("danceability", 0),
+                    user_features.get("energy", 0),
+                    user_features.get("valence", 0),
+                    user_features.get("tempo", 0) / 200,  # Normalize tempo
+                    user_features.get("instrumentalness", 0),
+                ]
+            ]
+        )
 
-        # Find songs in the same cluster
-        dataset["cluster"] = model.predict(features)
-        recommendations = dataset[dataset["cluster"] == cluster].sample(
-            5
-        )  # Sample 5 songs
+        # Scale user vector
+        scaled_user_vector = scaler.transform(user_vector)
 
-        # Format the response
-        recommended_songs = recommendations.to_dict(orient="records")
-        return jsonify(recommended_songs)
+        # Calculate similarity scores
+        similarities = cosine_similarity(scaled_user_vector, scaled_features)
+
+        # Get top 10 similar tracks
+        similar_indices = similarities[0].argsort()[-10:][::-1]
+
+        recommendations = []
+        for idx in similar_indices:
+            recommendations.append(
+                {
+                    "name": df.iloc[idx]["name"],
+                    "artist": df.iloc[idx]["artist"],
+                    "danceability": df.iloc[idx]["danceability"],
+                    "energy": df.iloc[idx]["energy"],
+                    "valence": df.iloc[idx]["valence"],
+                    "tempo": df.iloc[idx]["tempo"],
+                    "instrumentalness": df.iloc[idx]["instrumentalness"],
+                }
+            )
+
+        return jsonify(recommendations)
 
     except Exception as e:
-        print("Error:", e)
+        print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
 
 

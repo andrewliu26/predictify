@@ -1,19 +1,18 @@
 import pandas as pd
-from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import joblib
 
 # Load dataset
-data = pd.read_csv("./spotify_data.csv")
+data = pd.read_csv("spotify_data.csv")
 
-# Example preprocessing (modify according to your actual data columns)
-# Assume your CSV has columns like "danceability", "energy", "tempo", "valence"
-features = data[["danceability", "energy", "tempo", "valence"]]
+# Select features
+features = ["danceability", "energy", "tempo", "valence", "instrumentalness"]
+X = data[features]
 
-# Train a KMeans model
-num_clusters = 5  # You can tune this number based on your data
-model = KMeans(n_clusters=num_clusters, random_state=42)
-model.fit(features)
+# Initialize and fit the scaler
+scaler = StandardScaler()
+scaler.fit(X)
 
-# Save the trained model
-joblib.dump(model, "model.pkl")
-print("Model trained and saved as 'model.pkl'")
+# Save the scaler
+joblib.dump(scaler, "scaler.pkl")
+print("Scaler trained and saved as 'scaler.pkl'")

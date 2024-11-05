@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import TrackSection from "@/app/components/TrackSection";
+import DataVisualizations from "@/app/components/DataVisualizations";
 
 interface Artist {
   name: string;
@@ -17,6 +18,11 @@ interface TrackItem {
   artists: Artist[];
   album: Album;
   url: string;
+  danceability: number;
+  energy: number;
+  valence: number;
+  tempo: number;
+  instrumentalness: number;
 }
 
 interface RecentlyPlayedItem {
@@ -31,20 +37,43 @@ interface TopTrackItem {
   url: string;
 }
 
+async function fetchAudioFeatures(tracks: TrackItem[], token: string) {
+  const trackIds = tracks.map(track => track.id);
+  
+  try {
+    const response = await fetch('/api/spotify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: 'audioFeatures',
+        token,
+        trackIds,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch audio features');
+    }
+
+    const data = await response.json();
+    console.log('Audio Features Response:', data); // Added console.log
+    return data.audio_features || [];
+  } catch (error) {
+    console.error('Error fetching audio features:', error);
+    return [];
+  }
+}
+
 export default function Dashboard() {
   const [recentTracks, setRecentTracks] = useState<TrackItem[]>([]);
   const [topTracks, setTopTracks] = useState<TrackItem[]>([]);
+  const [recommendations, setRecommendations] = useState<TrackItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchSpotifyData = async (type: string) => {
-    const token = localStorage.getItem("spotifyToken");
-
-    if (!token) {
-      setError("No Spotify access token found.");
-      return;
-    }
-
+  const fetchSpotifyData = async (type: string, token: string) => {
     try {
       const response = await fetch("/api/spotify", {
         method: "POST",
@@ -62,27 +91,106 @@ export default function Dashboard() {
           artists: track.artists,
           album: track.album,
           url: `https://open.spotify.com/track/${track.id}`,
+          danceability: 0,
+          energy: 0,
+          valence: 0,
+          tempo: 0,
+          instrumentalness: 0,
         };
       });
 
-      if (type === "recentlyPlayed") {
-        setRecentTracks(normalizedData);
-      } else if (type === "topTracks") {
-        setTopTracks(normalizedData);
-      }
+      return normalizedData;
     } catch (error) {
       console.error("Error fetching Spotify data:", error);
       setError("Failed to fetch data.");
-    } finally {
-      setLoading(false);
+      return [];
+    }
+  };
+
+  const fetchRecommendations = async () => {
+    try {
+        // Calculate average features from top tracks
+        const avgFeatures = topTracks.reduce((acc, track) => {
+            acc.danceability += track.danceability || 0;
+            acc.energy += track.energy || 0;
+            acc.tempo += track.tempo || 0;
+            acc.valence += track.valence || 0;
+            acc.instrumentalness += track.instrumentalness || 0;
+            return acc;
+        }, {
+            danceability: 0,
+            energy: 0,
+            tempo: 0,
+            valence: 0,
+            instrumentalness: 0
+        });
+
+        // Calculate averages
+        const numTracks = topTracks.length;
+        (Object.keys(avgFeatures) as Array<keyof typeof avgFeatures>).forEach(key => {
+            avgFeatures[key] /= numTracks;
+        });
+
+        const response = await fetch("/api/recommendations", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(avgFeatures),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch recommendations');
+        }
+
+        const data = await response.json();
+        setRecommendations(data);
+    } catch (error) {
+        console.error("Error fetching recommendations:", error);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([fetchSpotifyData("recentlyPlayed"), fetchSpotifyData("topTracks")]).then(() =>
-        setLoading(false)
-    );
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("spotifyToken");
+        if (!token) {
+          setError("No access token found");
+          return;
+        }
+
+        // Fetch top tracks
+        const topTracksData = await fetchSpotifyData("topTracks", token);
+        console.log("Top Tracks Raw Data:", topTracksData); // Added log
+
+        if (topTracksData.length) {
+          const audioFeatures = await fetchAudioFeatures(topTracksData, token);
+          console.log("Audio Features:", audioFeatures); // Added log
+          
+          // Merge audio features with track data
+          const tracksWithFeatures = topTracksData.map((track, index) => {
+            const merged = {
+              ...track,
+              ...audioFeatures[index]
+            };
+            console.log("Merged Track Data:", merged); // Added log
+            return merged;
+          });
+
+          setTopTracks(tracksWithFeatures);
+        }
+
+        // Fetch recently played
+        const recentlyPlayedData = await fetchSpotifyData("recentlyPlayed", token);
+        setRecentTracks(recentlyPlayedData);
+
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleLogout = () => {
@@ -126,10 +234,18 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <TrackSection title="Top Tracks" subtitle="in the last 6 months" tracks={topTracks} />
             <TrackSection title="Recently Played Tracks" tracks={recentTracks} />
           </div>
+
+          <DataVisualizations tracks={[...topTracks, ...recentTracks]} />
+
+          {recommendations.length > 0 && (
+            <div className="mt-8">
+              <TrackSection title="Recommended Tracks" subtitle="based on your music taste" tracks={recommendations} />
+            </div>
+          )}
         </div>
         
         <footer className="mt-12 mb-4 text-center text-sm opacity-70">
