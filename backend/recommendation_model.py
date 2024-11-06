@@ -4,11 +4,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
 import time
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
-import os
-from sklearn.decomposition import PCA
 
 
 class HybridRecommender:
@@ -26,65 +21,8 @@ class HybridRecommender:
         self.dataset = None  # Will store our full dataset
         self.scaled_features = None  # Will store pre-scaled features
 
-        # Add visualization directory setup
-        self.viz_dir = Path("visualizations")
-        self.viz_dir.mkdir(exist_ok=True)
-
         print("Initializing HybridRecommender...")
         self._load_and_train_model()
-
-    def _generate_feature_distribution_plot(self):
-        plt.figure(figsize=(12, 6))
-        for feature in self.feature_names:
-            sns.kdeplot(data=self.dataset[feature], label=feature)
-
-        plt.title("Feature Distributions")
-        plt.xlabel("Value")
-        plt.ylabel("Density")
-        plt.legend()
-        plt.savefig(self.viz_dir / "feature_distributions.png")
-        plt.close()
-
-    def _generate_cluster_visualization(self):
-        # Create PCA for 2D visualization
-        pca = PCA(n_components=2)
-        reduced_features = pca.fit_transform(self.scaled_features)
-
-        plt.figure(figsize=(10, 10))
-        scatter = plt.scatter(
-            reduced_features[:, 0],
-            reduced_features[:, 1],
-            c=self.kmeans.labels_,
-            cmap="viridis",
-            alpha=0.6,
-        )
-
-        # Plot cluster centers
-        centers_reduced = pca.transform(self.kmeans.cluster_centers_)
-        plt.scatter(
-            centers_reduced[:, 0],
-            centers_reduced[:, 1],
-            c="red",
-            marker="x",
-            s=200,
-            linewidths=3,
-            label="Centroids",
-        )
-
-        plt.title(f"Song Clusters (K={self.n_clusters})")
-        plt.colorbar(scatter, label="Cluster")
-        plt.legend()
-        plt.savefig(self.viz_dir / "cluster_visualization.png")
-        plt.close()
-
-    def _generate_feature_correlation_plot(self):
-        plt.figure(figsize=(10, 8))
-        correlation_matrix = self.dataset[self.feature_names].corr()
-        sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", center=0)
-        plt.title("Feature Correlation Matrix")
-        plt.tight_layout()
-        plt.savefig(self.viz_dir / "feature_correlations.png")
-        plt.close()
 
     def _load_and_train_model(self):
         print("Loading dataset...")
@@ -94,14 +32,6 @@ class HybridRecommender:
         self.dataset = pd.read_csv("spotify_data.csv")
         print(f"Dataset loaded in {time.time() - start_time:.2f} seconds")
         print(f"Dataset shape: {self.dataset.shape}")
-
-        # Generate initial distribution plot
-        print("Generating feature distribution plot...")
-        self._generate_feature_distribution_plot()
-
-        # Generate correlation plot
-        print("Generating feature correlation plot...")
-        self._generate_feature_correlation_plot()
 
         print("Starting training process...")
         print("Scaling features...")
@@ -124,10 +54,6 @@ class HybridRecommender:
         for i in range(self.n_clusters):
             cluster_size = np.sum(cluster_labels == i)
             print(f"Cluster {i} size: {cluster_size} songs")
-
-        # Train KMeans and generate cluster visualization
-        print("Generating cluster visualization...")
-        self._generate_cluster_visualization()
 
     def _get_cluster_recommendations(self, scaled_input):
         """Get recommendations based on K-means clustering"""
@@ -205,38 +131,7 @@ class HybridRecommender:
         print(f"Content similarity contribution: {1 - cluster_weight}")
         print(f"Recommended features: {recommendations}")
 
-        # Generate visualization of the recommendation
-        self._generate_recommendation_visualization(user_tracks, recommended_features)
-
         return recommended_features
-
-    def _generate_recommendation_visualization(self, user_tracks, recommended_features):
-        plt.figure(figsize=(10, 6))
-
-        # Plot user tracks features
-        x = np.arange(len(self.feature_names))
-        width = 0.35
-
-        plt.bar(
-            x - width / 2,
-            user_tracks[self.feature_names].mean(),
-            width,
-            label="User Average",
-            alpha=0.7,
-        )
-        plt.bar(
-            x + width / 2, recommended_features, width, label="Recommended", alpha=0.7
-        )
-
-        plt.xlabel("Features")
-        plt.ylabel("Value")
-        plt.title("User Average vs Recommended Features")
-        plt.xticks(x, self.feature_names, rotation=45)
-        plt.legend()
-        plt.tight_layout()
-
-        plt.savefig(self.viz_dir / "recommendation_comparison.png")
-        plt.close()
 
     def get_feature_names(self):
         """Return the feature names in the correct order"""

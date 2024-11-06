@@ -1,8 +1,41 @@
 # Predictify: Spotify Music Recommendation System
 
+### [Midterm Demo](https://www.youtube.com/watch?v=tQtJyXIZlVc)
+
+## Table of Contents
+
+- [Project Description](#project-description)
+- [Project Goals](#project-goals)
+- [Data](#data)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Setup and Installation](#setup-and-installation)
+  - [Prerequisites](#prerequisites)
+  - [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
+  - [Recommendation System](#recommendation-system)
+  - [Feature Engineering](#feature-engineering)
+- [Development Notes](#development-notes)
+- [Future Improvements](#future-improvements)
+- [Conclusion](#conclusion)
+
 ## Project Description
 
-Predictify is a web application that analyzes users' Spotify listening history and recommends new tracks using a hybrid machine learning approach. The system combines K-means clustering with content-based filtering, enhanced by Spotify's audio features API to suggest songs that match the user's music preferences.
+Predictify is a web application that analyzes users' Spotify most listened to tracks and recommends new tracks using a hybrid machine learning approach. The system combines K-means clustering with content-based filtering, enhanced by Spotify's audio features API to suggest songs that match the user's music preferences.
+
+## Project Goals
+
+- **Primary Goal**: Recommend songs based on users' Spotify listening history.
+- **Specific Goals**:
+  1. Collect listening data from Spotify, including song metadata and audio features.
+  2. Analyze user listening habits based on key audio features.
+  3. Build a content-based recommendation model to suggest similar songs.
+  4. Create a simple interface where users can view their music trends and recommendations.
+
+## Data
+
+Due to [Spotify's developer policy](https://developer.spotify.com/terms#section-iv-restrictions:~:text=Misuse%20of%20the,or%20AI%20model%3B) against using Spotify Content (such as track metadata and audio features) for machine learning and AI training, I'm using this [Kaggle dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset/data) from 2022 with 114,000 Spotify tracks to train and test the model.
 
 ## Features
 
@@ -12,7 +45,6 @@ Predictify is a web application that analyzes users' Spotify listening history a
   - K-means clustering for grouping similar songs
   - Content-based filtering using audio features
   - Adjustable weights between clustering and content similarity
-- Real-time song recommendations based on listening patterns
 
 ## Tech Stack
 
@@ -39,40 +71,9 @@ Predictify is a web application that analyzes users' Spotify listening history a
 - Python (v3.11.5 or higher)
 - Spotify Developer Account
 
-### Environment Setup
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/andrewliu26/predictify.git
-cd predictify
-```
-
-2. Set up the frontend:
-
-```bash
-cd frontend
-npm install
-```
-
-3. Create a `.env.local` file in the frontend directory:
-
-```env
-NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_spotify_client_id
-NEXT_PUBLIC_SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/callback
-```
-
-4. Set up the backend:
-
-```bash
-cd ../backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
 ### Running the Application
+
+**Note:** In its current state, the app cannot be run locally or remotely by machines other than mine since it requires the client id and secret for my Spotify Developer project.
 
 1. Start the backend server:
 
@@ -93,7 +94,7 @@ npm run dev
 
 The frontend will run on http://localhost:3000
 
-3. Visit http://localhost:3000 in your browser to use the application
+3. Visit http://localhost:3000 in browser to use the application
 
 ## Project Structure
 
@@ -151,13 +152,14 @@ The model considers key Spotify audio features:
 ## Development Notes
 
 - The ML model is trained on startup using the spotify_data.csv dataset
-- Recommendations combine ML predictions with Spotify's API
-- Feature weights can be adjusted via the `cluster_weight` parameter
+- Recommendations combine ML predictions with Spotify's recommendation API endpoint
 
 ## Future Improvements
 
 - Enhanced user interface with more detailed music analytics
 - Expanded feature set for more precise recommendations
-- User feedback integration for recommendation refinement
-- Mobile responsiveness optimization
 - Additional recommendation algorithms (e.g., collaborative filtering)
+
+## Conclusion
+
+So far, I've implemented a simple music recommendation system that helps users discover new songs based on their listening habits. The project combines data processing, content-based filtering, and interactive visualizations in an easy-to-use web app, leveraging both K-means clustering and content-based filtering for more accurate recommendations. I plan to further improve the model and web interface to make this a more effective and useful application.
