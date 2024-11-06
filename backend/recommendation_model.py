@@ -15,7 +15,7 @@ class HybridRecommender:
             "danceability",
             "energy",
             "valence",
-            "tempo",
+            "loudness",
             "instrumentalness",
         ]
         self.dataset = None  # Will store our full dataset

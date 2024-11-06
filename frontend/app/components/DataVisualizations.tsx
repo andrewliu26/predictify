@@ -34,7 +34,7 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
           track.danceability || 0,
           track.energy || 0,
           track.valence || 0,
-          track.tempo ? track.tempo / 200 : 0,
+          track.loudness || 0,
           track.instrumentalness || 0
         ],
         borderColor: `hsl(${(index * 360) / displayTracks.length}, 80%, 60%)`,
@@ -55,7 +55,7 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
     chartInstance.current = new Chart(ctx, {
       type: "radar",
       data: {
-        labels: ["Danceability", "Energy", "Valence", "Tempo", "Instrumentalness"],
+        labels: ["Danceability", "Energy", "Valence", "Loudness", "Instrumentalness"],
         datasets: datasets,
       },
       options: {

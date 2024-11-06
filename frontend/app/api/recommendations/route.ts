@@ -40,11 +40,13 @@ export async function POST(request: NextRequest) {
         seed_tracks: seedTracks.join(','),
         target_danceability: recommendedFeatures.danceability.toString(),
         target_energy: recommendedFeatures.energy.toString(),
-        target_tempo: recommendedFeatures.tempo.toString(),
+        target_loudness: recommendedFeatures.loudness.toString(),
         target_valence: recommendedFeatures.valence.toString(),
         target_instrumentalness: recommendedFeatures.instrumentalness.toString(),
         limit: '20'
     }).toString();
+
+    console.log("Requesting Spotify recommendations with params:", queryParams);
 
     const response = await fetch(`https://api.spotify.com/v1/recommendations?${queryParams}`, {
       method: "GET",
@@ -55,10 +57,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Spotify API Error:", response.status, errorData);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("Spotify Recommendations API Response:", data);
+
     return NextResponse.json(data.tracks);
   } catch (error) {
     console.error("Error fetching recommendations:", error);

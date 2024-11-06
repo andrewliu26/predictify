@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import TrackSection from "@/app/components/TrackSection";
 import DataVisualizations from "@/app/components/DataVisualizations";
+import { useRouter } from "next/navigation";
 
 interface Artist {
   name: string;
@@ -21,7 +22,7 @@ interface TrackItem {
   danceability: number;
   energy: number;
   valence: number;
-  tempo: number;
+  loudness: number;
   instrumentalness: number;
 }
 
@@ -37,36 +38,8 @@ interface TopTrackItem {
   url: string;
 }
 
-async function fetchAudioFeatures(tracks: TrackItem[], token: string) {
-  const trackIds = tracks.map(track => track.id);
-  
-  try {
-    const response = await fetch('/api/spotify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: 'audioFeatures',
-        token,
-        trackIds,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch audio features');
-    }
-
-    const data = await response.json();
-    console.log('Audio Features Response:', data); // Added console.log
-    return data.audio_features || [];
-  } catch (error) {
-    console.error('Error fetching audio features:', error);
-    return [];
-  }
-}
-
 export default function Dashboard() {
+  const router = useRouter();
   const [recentTracks, setRecentTracks] = useState<TrackItem[]>([]);
   const [topTracks, setTopTracks] = useState<TrackItem[]>([]);
   const [recommendations, setRecommendations] = useState<TrackItem[]>([]);
@@ -83,27 +56,49 @@ export default function Dashboard() {
 
       const data: RecentlyPlayedItem[] | TopTrackItem[] = await response.json();
 
-      const normalizedData = data.map((item) => {
+      // Get track IDs for audio features
+      const trackIds = data.map((item) => {
         const track = (item as RecentlyPlayedItem).track || (item as TopTrackItem);
+        return track.id;
+      });
+
+      // Fetch audio features
+      const audioFeaturesResponse = await fetch("/api/spotify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "audioFeatures", 
+          token,
+          trackIds 
+        }),
+      });
+
+      const audioFeatures = await audioFeaturesResponse.json();
+      console.log("Audio features response:", audioFeatures); // Debug log
+
+      // Map the audio features to tracks
+      const normalizedData = data.map((item, index) => {
+        const track = (item as RecentlyPlayedItem).track || (item as TopTrackItem);
+        const features = audioFeatures.audio_features?.[index] || {};
+        
         return {
           id: track.id,
           name: track.name,
           artists: track.artists,
           album: track.album,
           url: `https://open.spotify.com/track/${track.id}`,
-          danceability: Math.random() * 0.8 + 0.2,
-          energy: Math.random() * 0.8 + 0.2,
-          valence: Math.random() * 0.8 + 0.2,
-          tempo: (Math.random() * 160 + 60) / 200,
-          instrumentalness: Math.random() * 0.5
+          danceability: features.danceability || 0,
+          energy: features.energy || 0,
+          valence: features.valence || 0,
+          loudness: features.loudness ? (features.loudness + 60) / 60 : 0,
+          instrumentalness: features.instrumentalness || 0
         };
       });
 
       return normalizedData;
     } catch (error) {
-      console.error("Error fetching Spotify data:", error);
-      setError("Failed to fetch data.");
-      return [];
+      console.error("Error fetching data:", error);
+      throw error;
     }
   };
 
@@ -120,14 +115,14 @@ export default function Dashboard() {
         const avgFeatures = topTracks.reduce((acc, track) => {
             acc.danceability += track.danceability || 0;
             acc.energy += track.energy || 0;
-            acc.tempo += track.tempo || 0;
+            acc.loudness += track.loudness || 0;
             acc.valence += track.valence || 0;
             acc.instrumentalness += track.instrumentalness || 0;
             return acc;
         }, {
             danceability: 0,
             energy: 0,
-            tempo: 0,
+            loudness: 0,
             valence: 0,
             instrumentalness: 0
         });
@@ -160,40 +155,26 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    const token = localStorage.getItem("spotifyToken");
+    if (!token) {
+      router.push("/");
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("spotifyToken");
-        if (!token) {
-          setError("No access token found");
-          return;
-        }
+        setLoading(true);
+        const [topTracksData, recentlyPlayedData] = await Promise.all([
+          fetchSpotifyData("topTracks", token),
+          fetchSpotifyData("recentlyPlayed", token)
+        ]);
 
-        // Fetch top tracks
-        const topTracksData = await fetchSpotifyData("topTracks", token);
-        console.log("Top Tracks Raw Data:", topTracksData);
-
-        if (topTracksData.length) {
-          // Use dummy audio features instead of fetching
-          const tracksWithFeatures = topTracksData.map(track => ({
-            ...track,
-            danceability: Math.random() * 0.8 + 0.2,
-            energy: Math.random() * 0.8 + 0.2,
-            valence: Math.random() * 0.8 + 0.2, 
-            tempo: (Math.random() * 160 + 60) / 200,
-            instrumentalness: Math.random() * 0.5
-          }));
-
-          setTopTracks(tracksWithFeatures);
-        }
-
-        // Fetch recently played
-        const recentlyPlayedData = await fetchSpotifyData("recentlyPlayed", token);
+        setTopTracks(topTracksData);
         setRecentTracks(recentlyPlayedData);
-
+        setLoading(false);
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setError('Failed to load data');
-      } finally {
+        console.error("Error:", error);
+        setError("Failed to fetch data");
         setLoading(false);
       }
     };
