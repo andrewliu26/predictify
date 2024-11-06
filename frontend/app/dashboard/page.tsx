@@ -91,11 +91,11 @@ export default function Dashboard() {
           artists: track.artists,
           album: track.album,
           url: `https://open.spotify.com/track/${track.id}`,
-          danceability: 0,
-          energy: 0,
-          valence: 0,
-          tempo: 0,
-          instrumentalness: 0,
+          danceability: Math.random() * 0.8 + 0.2,
+          energy: Math.random() * 0.8 + 0.2,
+          valence: Math.random() * 0.8 + 0.2,
+          tempo: (Math.random() * 160 + 60) / 200,
+          instrumentalness: Math.random() * 0.5
         };
       });
 
@@ -109,6 +109,13 @@ export default function Dashboard() {
 
   const fetchRecommendations = async () => {
     try {
+        console.log("Fetching recommendations...");
+        const token = localStorage.getItem("spotifyToken");
+        if (!token) return;
+
+        // Get seed tracks (up to 5 track IDs from top tracks)
+        const seedTracks = topTracks.slice(0, 5).map(track => track.id);
+        
         // Calculate average features from top tracks
         const avgFeatures = topTracks.reduce((acc, track) => {
             acc.danceability += track.danceability || 0;
@@ -127,18 +134,22 @@ export default function Dashboard() {
 
         // Calculate averages
         const numTracks = topTracks.length;
-        (Object.keys(avgFeatures) as Array<keyof typeof avgFeatures>).forEach(key => {
-            avgFeatures[key] /= numTracks;
+        Object.keys(avgFeatures).forEach(key => {
+            avgFeatures[key as keyof typeof avgFeatures] /= numTracks;
         });
 
         const response = await fetch("/api/recommendations", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(avgFeatures),
+            body: JSON.stringify({
+                token,
+                seedTracks,
+                targetFeatures: avgFeatures
+            }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to fetch recommendations');
+            throw new Error(`Failed to fetch recommendations: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
@@ -159,21 +170,18 @@ export default function Dashboard() {
 
         // Fetch top tracks
         const topTracksData = await fetchSpotifyData("topTracks", token);
-        console.log("Top Tracks Raw Data:", topTracksData); // Added log
+        console.log("Top Tracks Raw Data:", topTracksData);
 
         if (topTracksData.length) {
-          const audioFeatures = await fetchAudioFeatures(topTracksData, token);
-          console.log("Audio Features:", audioFeatures); // Added log
-          
-          // Merge audio features with track data
-          const tracksWithFeatures = topTracksData.map((track, index) => {
-            const merged = {
-              ...track,
-              ...audioFeatures[index]
-            };
-            console.log("Merged Track Data:", merged); // Added log
-            return merged;
-          });
+          // Use dummy audio features instead of fetching
+          const tracksWithFeatures = topTracksData.map(track => ({
+            ...track,
+            danceability: Math.random() * 0.8 + 0.2,
+            energy: Math.random() * 0.8 + 0.2,
+            valence: Math.random() * 0.8 + 0.2, 
+            tempo: (Math.random() * 160 + 60) / 200,
+            instrumentalness: Math.random() * 0.5
+          }));
 
           setTopTracks(tracksWithFeatures);
         }
@@ -193,6 +201,14 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
+  // Separate useEffect for fetching recommendations after topTracks are set
+  useEffect(() => {
+    if (topTracks.length > 0) {
+      console.log("Top tracks updated, fetching recommendations");
+      fetchRecommendations();
+    }
+  }, [topTracks]);
+
   const handleLogout = () => {
     localStorage.removeItem("spotifyToken");
     window.location.href = "/";
@@ -204,7 +220,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="flex items-center justify-center min-h-screen">
           <div className="loader"></div>
         </div>
     );
@@ -241,9 +257,50 @@ export default function Dashboard() {
 
           <DataVisualizations tracks={[...topTracks, ...recentTracks]} />
 
-          {recommendations.length > 0 && (
+          {recommendations && recommendations.length > 0 && (
             <div className="mt-8">
-              <TrackSection title="Recommended Tracks" subtitle="based on your music taste" tracks={recommendations} />
+              <h2 className="text-2xl font-semibold mb-6" style={{ color: "var(--highlight-text)" }}>Recommended Tracks</h2>
+              <div className="rounded-lg p-6 shadow-md" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recommendations.map((track, index) => (
+                    <a 
+                      key={index}
+                      href={`https://open.spotify.com/track/${track.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer" 
+                      className="p-4 rounded-md hover:scale-[1.02] transition-transform flex items-center gap-4 group"
+                      style={{ backgroundColor: "var(--background)", borderColor: "var(--card-border)" }}
+                    >
+                      <img 
+                        src={track.album.images[0]?.url} 
+                        alt={`${track.name} album art`}
+                        className="w-16 h-16 rounded-md"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg truncate">{track.name}</h3>
+                        <p style={{ color: "var(--primary-text)" }} className="truncate">
+                          {track.artists.map(a => a.name).join(", ")}
+                        </p>
+                      </div>
+                      <svg
+                        width={24}
+                        height={24}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 flex-shrink-0"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M20 14a1 1 0 0 0-1 1v3.077c0 .459-.022.57-.082.684a.363.363 0 0 1-.157.157c-.113.06-.225.082-.684.082H5.923c-.459 0-.571-.022-.684-.082a.363.363 0 0 1-.157-.157c-.06-.113-.082-.225-.082-.684L4.999 5.5a.5.5 0 0 1 .5-.5l3.5.005a1 1 0 1 0 .002-2L5.501 3a2.5 2.5 0 0 0-2.502 2.5v12.577c0 .76.083 1.185.32 1.627.223.419.558.753.977.977.442.237.866.319 1.627.319h12.154c.76 0 1.185-.082 1.627-.319.419-.224.753-.558.977-.977.237-.442.319-.866.319-1.627V15a1 1 0 0 0-1-1zm-2-9.055v-.291l-.39.09A10 10 0 0 1 15.36 5H14a1 1 0 1 1 0-2l5.5.003a1.5 1.5 0 0 1 1.5 1.5V10a1 1 0 1 1-2 0V8.639c0-.757.086-1.511.256-2.249l.09-.39h-.295a10 10 0 0 1-1.411 1.775l-5.933 5.932a1 1 0 0 1-1.414-1.414l5.944-5.944A10 10 0 0 1 18 4.945z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                    </a>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

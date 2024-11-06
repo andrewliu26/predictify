@@ -9,7 +9,7 @@ export default function LandingPage() {
         "user-read-currently-playing",
     ].join("%20");
 
-    const loginUrl = `https://accounts.spotify.com/authorize?client_id=${SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=${SCOPES}`;
+    const loginUrl = `https://accounts.spotify.com/authorize?client_id=${SPOTIFY_CLIENT_ID}&response_type=code&redirect_uri=${REDIRECT_URI}&scope=${SCOPES}&show_dialog=true`;
 
     const handleLogin = () => {
         if (!SPOTIFY_CLIENT_ID) {
@@ -20,14 +20,14 @@ export default function LandingPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
+        <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8" style={{ backgroundColor: "var(--background)", color: "var(--foreground)" }}>
             <h1 className="text-4xl font-bold">Predictify</h1>
             <p className="text-lg text-center max-w-md">
                 Find your next favorite song
             </p>
             <button
                 onClick={handleLogin}
-                className="rounded-full bg-foreground text-background px-6 py-3 text-lg hover:bg-[#383838] dark:hover:bg-[#ccc] transition-colors flex items-center gap-2"
+                className="rounded-full bg-foreground text-background px-6 py-3 text-lg hover:bg-[#ccc] transition-colors flex items-center gap-2"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

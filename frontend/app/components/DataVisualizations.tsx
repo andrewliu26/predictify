@@ -37,15 +37,16 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
           track.tempo ? track.tempo / 200 : 0,
           track.instrumentalness || 0
         ],
-        borderColor: `hsl(${(index * 360) / displayTracks.length}, 70%, 50%)`,
-        backgroundColor: `hsla(${(index * 360) / displayTracks.length}, 70%, 50%, 0.1)`,
-        borderWidth: 2,
-        opacity: 0.3,
+        borderColor: `hsl(${(index * 360) / displayTracks.length}, 80%, 60%)`,
+        backgroundColor: `hsla(${(index * 360) / displayTracks.length}, 80%, 60%, 0.15)`,
+        borderWidth: 2.5,
+        opacity: 0.5,
         fill: true,
-        pointBackgroundColor: `hsl(${(index * 360) / displayTracks.length}, 70%, 50%)`,
+        pointBackgroundColor: `hsl(${(index * 360) / displayTracks.length}, 80%, 60%)`,
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: `hsl(${(index * 360) / displayTracks.length}, 70%, 50%)`,
+        pointHoverBorderColor: `hsl(${(index * 360) / displayTracks.length}, 80%, 60%)`,
+        pointRadius: 4,
       };
       console.log("Created dataset:", dataset);
       return dataset;
@@ -65,12 +66,31 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
             beginAtZero: true,
             max: 1,
             ticks: {
-              display: false // This will hide the scale numbers
+              display: false
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)',
+            },
+            angleLines: {
+              color: 'rgba(255, 255, 255, 0.2)',
+            },
+            pointLabels: {
+              color: 'rgba(255, 255, 255, 0.9)',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
             }
           }
         },
         plugins: {
           legend: {
+            labels: {
+              color: 'rgba(255, 255, 255, 0.9)',
+              font: {
+                size: 13
+              }
+            },
             onHover: (event, legendItem) => {
               if (chartInstance.current) {
                 const index = legendItem.datasetIndex;
@@ -78,8 +98,8 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
                 
                 // Set opacity for all datasets low
                 datasets.forEach((dataset: any, i: number) => {
-                  dataset.borderColor = dataset.borderColor.replace('rgba', 'hsla').replace(/[\d.]+\)$/g, '0.3)');
-                  dataset.backgroundColor = dataset.backgroundColor.replace('rgba', 'hsla').replace(/[\d.]+\)$/g, '0.1)');
+                  dataset.borderColor = dataset.borderColor.replace('rgba', 'hsla').replace(/[\d.]+\)$/g, '0.4)');
+                  dataset.backgroundColor = dataset.backgroundColor.replace('rgba', 'hsla').replace(/[\d.]+\)$/g, '0.15)');
                 });
                 
                 // Highlight hovered dataset
@@ -89,7 +109,7 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
                     backgroundColor: string; 
                   };
                   dataset.borderColor = dataset.borderColor.replace(/[\d.]+\)$/g, '1)');
-                  dataset.backgroundColor = dataset.backgroundColor.replace(/[\d.]+\)$/g, '0.3)');
+                  dataset.backgroundColor = dataset.backgroundColor.replace(/[\d.]+\)$/g, '0.4)');
                 }
                 
                 chartInstance.current.update();
@@ -99,14 +119,18 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
               if (chartInstance.current) {
                 // Reset all datasets to original opacity
                 chartInstance.current.data.datasets.forEach((dataset: any) => {
-                  dataset.borderColor = dataset.borderColor.replace(/[\d.]+\)$/g, '0.3)');
-                  dataset.backgroundColor = dataset.backgroundColor.replace(/[\d.]+\)$/g, '0.1)');
+                  dataset.borderColor = dataset.borderColor.replace(/[\d.]+\)$/g, '0.5)');
+                  dataset.backgroundColor = dataset.backgroundColor.replace(/[\d.]+\)$/g, '0.15)');
                 });
                 chartInstance.current.update();
               }
             }
           },
           tooltip: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: 'rgba(255, 255, 255, 0.95)',
+            bodyColor: 'rgba(255, 255, 255, 0.95)',
+            padding: 12,
             callbacks: {
               label: (context) => {
                 const label = context.dataset.label || '';
@@ -119,7 +143,7 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
         },
         elements: {
           line: {
-            borderWidth: 2
+            borderWidth: 2.5
           }
         },
       },
@@ -133,11 +157,13 @@ export default function DataVisualizations({ tracks }: DataVisualizationsProps) 
   }, [tracks]);
 
   return (
-    <div className="bg-card-bg border border-card-border rounded-lg p-6 shadow-sm">
-      <h3 className="text-xl font-semibold mb-4">Track Analysis</h3>
-      <div style={{ height: "400px" }}>
-        <canvas ref={chartRef} />
-      </div>
+    <div>
+        <h2 className="text-2xl font-semibold mb-6" style={{ color: "var(--highlight-text)" }}>Top Tracks Analysis</h2>
+        <div className="bg-card-bg border border-card-border rounded-lg p-6 shadow-sm">
+        <div style={{ height: "400px" }}>
+            <canvas ref={chartRef} />
+        </div>
+        </div>
     </div>
   );
 }

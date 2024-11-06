@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await fetchSpotifyData(url, token);
-    console.log("Spotify API Response:", data);
+    //console.log("Spotify API Response:", data);
 
     if (data && !data.error) {
       return NextResponse.json(data);
