@@ -1,67 +1,50 @@
-# Predictify: Spotify Music Recommendation System
+# Predictify: Music Recommendation System
 
-### [Midterm Demo](https://www.youtube.com/watch?v=tQtJyXIZlVc)
+## Project Description
+
+Predictify is a web application designed to recommend new tracks to users based on their musical preferences. While earlier versions relied on the Spotify Web API for training data, the current system utilizes a curated, static dataset of Spotify tracks. By integrating all data and model training directly into the application, the recommendation engine—combining K-means clustering and content-based similarity—operates independently of external data sources, improving reliability and reproducibility.
+
+**Primary Goal**: Suggest songs that resemble a chosen track, guided by acoustic features and genre tags.
+
+**Specific Goals**:
+
+1. Use a static dataset of Spotify tracks (including audio features) to train and evaluate the recommendation model.
+2. Analyze a selected track’s audio profile (e.g., danceability, energy, valence) to guide recommendations.
+3. Employ a hybrid approach that unites cluster-based similarity with direct feature-to-feature (cosine) similarity.
+4. Implement a user-friendly interface for searching tracks, exploring their attributes, and viewing recommendations.
 
 ## Table of Contents
 
-- [Project Description](#project-description)
-- [Project Goals](#project-goals)
 - [Data](#data)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Setup and Installation](#setup-and-installation)
-  - [Prerequisites](#prerequisites)
-  - [Running the Application](#running-the-application)
-- [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
-  - [Recommendation System](#recommendation-system)
-  - [Feature Engineering](#feature-engineering)
+- [Results](#results)
 - [Development Notes](#development-notes)
 - [Future Improvements](#future-improvements)
 - [Conclusion](#conclusion)
 
-## Project Description
-
-Predictify is a web application that analyzes users' Spotify most listened to tracks and recommends new tracks using a hybrid machine learning approach. The system combines K-means clustering with content-based filtering, enhanced by Spotify's audio features API to suggest songs that match the user's music preferences.
-
-## Project Goals
-
-- **Primary Goal**: Recommend songs based on users' Spotify listening history.
-- **Specific Goals**:
-  1. Collect listening data from Spotify, including song metadata and audio features.
-  2. Analyze user listening habits based on key audio features.
-  3. Build a content-based recommendation model to suggest similar songs.
-  4. Create a simple interface where users can view their music trends and recommendations.
-
 ## Data
 
-Due to [Spotify's developer policy](https://developer.spotify.com/terms#section-iv-restrictions:~:text=Misuse%20of%20the,or%20AI%20model%3B) against using Spotify Content (such as track metadata and audio features) for machine learning and AI training, I'm using this [Kaggle dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset/data) from 2022 with 114,000 Spotify tracks to train and test the model.
+The system relies on a [Kaggle dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset/data) of over 100,000 Spotify tracks, each with comprehensive audio features. This static dataset allows the model to be trained and tested without API rate limits or policy constraints, ensuring consistent and controllable evaluation.
 
 ## Features
 
-- Spotify OAuth integration for secure user authentication
-- Display of user's top tracks
-- Advanced hybrid recommendation engine combining:
-  - K-means clustering for grouping similar songs
-  - Content-based filtering using audio features
-  - Adjustable weights between clustering and content similarity
+- **Search and Discovery**: Users can look up songs and access metadata (track name, artists, album, genre).
+- **Audio Feature Visualization**: Selected songs are displayed with a feature chart, highlighting attributes like danceability or valence.
+- **Hybrid Recommendation Engine**:
+  - K-means clustering for grouping similar songs.
+  - Content-based filtering (cosine similarity) for refining recommendations.
+  - Adjustable weighting for fine-tuning the balance between clustering and direct similarity.
 
 ## Tech Stack
 
-- **Frontend**:
-  - Next.js 13+ with App Router
-  - TypeScript
-  - TailwindCSS
-- **Backend**:
-  - Flask
-  - Python 3.11+
-  - scikit-learn for ML models
-- **APIs**:
-  - Spotify Web API
-- **ML Components**:
-  - K-means clustering for song grouping
-  - Cosine similarity for content-based filtering
-  - Feature scaling with StandardScaler
+- **Frontend**: Next.js (App Router), TypeScript, TailwindCSS
+- **Backend**: FastAPI or Flask (Python 3.11+)
+- **ML Components**: scikit-learn (K-means, StandardScaler), cosine similarity for audio features
+
+_(Note: The current version no longer depends on live Spotify data for model training. All data is local, ensuring stable and consistent model behavior.)_
 
 ## Setup and Installation
 
@@ -69,97 +52,84 @@ Due to [Spotify's developer policy](https://developer.spotify.com/terms#section-
 
 - Node.js (v20.15.0 or higher)
 - Python (v3.11.5 or higher)
-- Spotify Developer Account
 
 ### Running the Application
 
-**Note:** In its current state, the app cannot be run locally or remotely by machines other than mine since it requires the client id and secret for my Spotify Developer project.
+1. **Make**:
 
-1. Start the backend server:
+   ```bash
+   make install  # Install dependencies
+   make start    # Start frontend and backend servers
+   make stop     # Stop both servers
+   ```
 
-```bash
-cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-python app.py
-```
+   The backend server runs on http://127.0.0.1:5000 (Flask) or http://127.0.0.1:8000 (FastAPI). The frontend server runs on http://localhost:3000.
 
-The backend will run on http://127.0.0.1:5000
-
-2. Start the frontend server (in a new terminal):
-
-```bash
-cd frontend
-npm run dev
-```
-
-The frontend will run on http://localhost:3000
-
-3. Visit http://localhost:3000 in browser to use the application
-
-## Project Structure
-
-```
-predictify/
-├── frontend/
-│   ├── app/                    # Next.js pages and API routes
-│   │   ├── api/               # API endpoints
-│   │   │   ├── recommendations/  # ML model integration
-│   │   │   ├── spotify/         # Spotify API handlers
-│   │   │   └── getSpotifyToken/ # OAuth token management
-│   │   ├── callback/          # Spotify OAuth callback
-│   │   └── dashboard/         # Main application interface
-│   └── package.json           # Frontend dependencies
-└── backend/
-    ├── app.py                 # Flask server
-    ├── recommendation_model.py # Hybrid ML model
-    ├── spotify_data.csv       # Training dataset
-    └── requirements.txt       # Backend dependencies
-```
+2. Open http://localhost:3000 in your browser to interact with the application.
 
 ## How It Works
 
 ### Recommendation System
 
-The application uses a hybrid recommendation approach:
+1. **K-Means Clustering**:  
+   The model first clusters songs using their normalized audio features (danceability, energy, valence, acousticness, instrumentalness, liveness). Clusters represent broad “musical neighborhoods.”
 
-1. **K-means Clustering**
+2. **Content-Based Filtering**:  
+   Within these clusters, cosine similarity measures the closeness of a chosen track to all others on a more granular level. Weighted features ensure that critical attributes (e.g., danceability) influence similarity more than less defining ones.
 
-   - Groups songs with similar audio features
-   - Identifies cluster centers that represent typical feature combinations
-   - Assigns new songs to the most appropriate cluster
-
-2. **Content-Based Filtering**
-
-   - Calculates cosine similarity between songs
-   - Compares audio features directly
-   - Finds similar songs regardless of cluster assignment
-
-3. **Hybrid Integration**
-   - Combines both approaches with adjustable weights
-   - Default: 60% clustering, 40% content-based
-   - Allows fine-tuning of recommendations
+3. **Hybrid Integration**:  
+   Recommendations combine cluster-based context with direct similarity scores. Domain-specific boosts (like genre alignment) further refine the suggestions.
 
 ### Feature Engineering
 
-The model considers key Spotify audio features:
+All relevant audio features are scaled to ensure fair comparisons. Feature weights are applied to emphasize certain attributes, enabling fine-tuning of the model’s sensitivity to particular musical characteristics.
 
-- Danceability
-- Energy
-- Valence (musical positiveness)
-- Tempo
-- Instrumentalness
+## Results
+
+### Clustering Performance
+
+After training, the K-means clustering model identifies distinct groups of tracks. The distribution of these clusters and their separation can be visually inspected using Principal Component Analysis (PCA).
+
+**Figure 1:** _PCA Visualization of Clusters_  
+<img src="backend/evaluation_report/pca_clusters.png" width="500" />
+
+In this two-dimensional PCA projection, each point represents a single track. Colors indicate cluster membership. The presence of distinguishable groupings suggests that clustering based on acoustic features produces meaningful partitions of the music space. Although PC1 and PC2 are abstract dimensions derived from all features, the observed separation implies that songs within a single cluster share underlying musical similarities.
+
+### Feature Relationships
+
+Understanding how features relate to each other aids in interpreting cluster formation and similarity measures.
+
+**Figure 2:** _Feature Correlation Matrix_  
+<img src="backend/evaluation_report/correlation_matrix.png" width="500" />
+
+This correlation matrix reveals relationships among the input features. For example, a strong negative correlation between energy and acousticness suggests that energetic tracks tend to be less acoustic. Such insights inform feature weighting decisions: if certain features strongly oppose each other, their combined effect on similarity can be adjusted to yield more balanced recommendations.
+
+### Cluster Characteristics and Distribution
+
+To identify which features most strongly define cluster boundaries, we examine their importance in the clustering process. Additionally, investigating how songs are distributed across clusters ensures that no single cluster disproportionately dominates.
+
+**Figure 3:** _Feature Importance in Clustering_  
+<img src="backend/evaluation_report/feature_importance.png" width="500" />
+
+Features that exhibit greater variation across cluster centers (e.g., instrumentalness or liveness) play a more substantial role in differentiating groups. Adjusting feature weights can thus shape the granularity of recommendations.
+
+**Figure 4:** _Distribution of Songs Across Clusters_  
+<img src="backend/evaluation_report/cluster_distribution.png" width="500" />
+
+The distribution of songs across clusters is reasonably balanced, indicating that multiple distinct musical “types” or styles are represented. If one cluster were overly large, the recommendations might feel less tailored. A balanced distribution suggests that the chosen number of clusters and feature weighting achieve a useful variety of musical groupings.
 
 ## Development Notes
 
-- The ML model is trained on startup using the spotify_data.csv dataset
-- Recommendations combine ML predictions with Spotify's recommendation API endpoint
+- The ML model is trained at server startup, relying entirely on the `spotify_data.csv` dataset.
+- No dynamic fetching of training data from Spotify’s API is required, ensuring stable, repeatable experiments.
+- Recommendations and visualizations are generated from locally stored features and the model’s predictions.
 
 ## Future Improvements
 
-- Enhanced user interface with more detailed music analytics
-- Expanded feature set for more precise recommendations
-- Additional recommendation algorithms (e.g., collaborative filtering)
+- Integrate additional audio or metadata features (e.g., tempo, loudness) to refine similarity.
+- Incorporate user feedback loops or collaborative filtering to enhance personalization.
+- Develop more advanced visual analytics to help users understand why certain recommendations appear.
 
 ## Conclusion
 
-So far, I've implemented a simple music recommendation system that helps users discover new songs based on their listening habits. The project combines data processing, content-based filtering, and interactive visualizations in an easy-to-use web app, leveraging both K-means clustering and content-based filtering for more accurate recommendations. I plan to further improve the model and web interface to make this a more effective and useful application.
+Predictify demonstrates that a hybrid recommender, trained on a local dataset, can produce meaningful music recommendations without relying on real-time external data. The PCA clusters, correlation analysis, and feature importance results underscore the model’s ability to organize and differentiate tracks according to their acoustic signatures. By balancing cluster-based context and direct content similarity—fine-tuning feature weights and incorporating genre boosts—the system offers tailored suggestions that genuinely resemble a user’s chosen track. As development continues, additional feature integration and personalization methods can further improve the system’s accuracy and user experience.
