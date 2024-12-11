@@ -15,16 +15,14 @@ jobs:
         with:
           python-version: '3.11'
       
-      - name: Install backend dependencies
+      - name: Install and Run Tests
         run: |
           cd backend
           python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
+          # Ensure pytest and requests are either in requirements.txt or explicitly installed
           pip install -r requirements.txt
-      
-      - name: Run tests
-        run: |
-          cd backend
-          source venv/bin/activate
+          # If pytest isn't in requirements.txt, add this line:
+          # pip install pytest requests
           pytest --maxfail=1 --disable-warnings -v
